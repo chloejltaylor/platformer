@@ -4,35 +4,36 @@ let game;
 let gameOptions = {
 
     // platform speed range, in pixels per second
-    platformSpeedRange: [300, 300],
+    platformSpeedRange: [300,300],
 
     // spawn range, how far should be the rightmost platform from the right edge
     // before next platform spawns, in pixels
-    spawnRange: [80, 300],
+    spawnRange: [80, 150],
 
     // platform width range, in pixels
-    platformSizeRange: [90, 300],
+    platformSizeRange: [200, 800],
 
     // a height range between rightmost platform and next platform to be spawned
-    platformHeightRange: [-5, 5],
+    // platformHeightRange: [-5, 5],
+    platformHeightRange: [0, 0],
 
     // a scale to be multiplied by platformHeightRange
-    platformHeighScale: 20,
+    platformHeightScale: 20,
 
     // platform max and min height, as screen height ratio
     platformVerticalLimit: [0.4, 0.8],
 
     // player gravity
-    playerGravity: 900,
+    playerGravity: 2000,
 
     // player jump force
-    jumpForce: 400,
+    jumpForce: 800,
 
     // player starting X position
     playerStartPosition: 200,
 
     // consecutive jumps allowed
-    jumps: 2,
+    jumps: 3,
 
     // % of probability a coin appears on the platform
     coinPercent: 25
@@ -46,7 +47,7 @@ window.onload = function() {
         width: 1334,
         height: 750,
         scene: [preloadGame, playGame],
-        backgroundColor: 0x0c88c7,
+        backgroundColor: 0xcccccc,
 
         // physics settings
         physics: {
@@ -67,9 +68,9 @@ class preloadGame extends Phaser.Scene{
     preload(){
         this.load.image("platform", "platform.png");
 
-        // player is a sprite sheet made by 24x48 pixels
-        this.load.spritesheet("player", "player.png", {
-            frameWidth: 24,
+        // player is a sprite sheet made by 48x48 pixels
+        this.load.spritesheet("player", "robot.png", {
+            frameWidth: 48,
             frameHeight: 48
         });
 
@@ -88,7 +89,17 @@ class preloadGame extends Phaser.Scene{
                 start: 0,
                 end: 1
             }),
-            frameRate: 8,
+            frameRate: 6,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: "jump",
+            frames: this.anims.generateFrameNumbers("player", {
+                start: 2,
+                end: 3
+            }),
+            frameRate: 6,
             repeat: -1
         });
 
@@ -168,7 +179,7 @@ class playGame extends Phaser.Scene{
         this.physics.add.collider(this.player, this.platformGroup, function(){
 
             // play "run" animation if the player is on a platform
-            if(!this.player.anims.isPlaying){
+            if(!this.player.anims.isPlaying || this.player.anims.getCurrentKey() == 'jump'){
                 this.player.anims.play("run");
             }
         }, null, this);
@@ -223,14 +234,14 @@ class playGame extends Phaser.Scene{
                 if(this.coinPool.getLength()){
                     let coin = this.coinPool.getFirst();
                     coin.x = posX;
-                    coin.y = posY - 96;
+                    coin.y = posY - 196;
                     coin.alpha = 1;
                     coin.active = true;
                     coin.visible = true;
                     this.coinPool.remove(coin);
                 }
                 else{
-                    let coin = this.physics.add.sprite(posX, posY - 96, "coin");
+                    let coin = this.physics.add.sprite(posX, posY - 196, "coin");
                     coin.setImmovable(true);
                     coin.setVelocityX(platform.body.velocity.x);
                     coin.anims.play("rotate");
@@ -250,7 +261,10 @@ class playGame extends Phaser.Scene{
             this.playerJumps ++;
 
             // stops animation
-            this.player.anims.stop();
+            // this.player.anims.stop();
+            
+            this.player.anims.play("jump");
+            console.log(this.player.anims.getCurrentKey())
         }
     }
     update(){
@@ -287,7 +301,7 @@ class playGame extends Phaser.Scene{
         // adding new platforms
         if(minDistance > this.nextPlatformDistance){
             let nextPlatformWidth = Phaser.Math.Between(gameOptions.platformSizeRange[0], gameOptions.platformSizeRange[1]);
-            let platformRandomHeight = gameOptions.platformHeighScale * Phaser.Math.Between(gameOptions.platformHeightRange[0], gameOptions.platformHeightRange[1]);
+            let platformRandomHeight = gameOptions.platformHeightScale * Phaser.Math.Between(gameOptions.platformHeightRange[0], gameOptions.platformHeightRange[1]);
             let nextPlatformGap = rightmostPlatformHeight + platformRandomHeight;
             let minPlatformHeight = game.config.height * gameOptions.platformVerticalLimit[0];
             let maxPlatformHeight = game.config.height * gameOptions.platformVerticalLimit[1];
